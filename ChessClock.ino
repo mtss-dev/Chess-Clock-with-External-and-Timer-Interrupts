@@ -1,140 +1,140 @@
- //Autor: Matheus Silva dos Santos
- 
- //Pinos utilizados para os Botoes e as LEDs
-  #define pinoBotaoPretas 2
-  #define pinoBotaoBrancas 3
-  #define pinoLedBrancas 10
-  #define pinoLedPretas 8
+//Author: Matheus Silva dos Santos
 
-  //Variaveis Globais
-  int cont = 0;                             //contador do estouro do temporizador
-  int primeiroPrintBrancas = 0;             //Flag para printar o tempo inicial do jogador de Brancas, no nosso caso "10:00", no Monitor Serial
-  int primeiroPrintPretas = 0;              //Flag para printar o tempo inicial do jogador de Pretas, no nosso caso "10:00", no Monitor Serial
-  int temporizadorBrancas = 600;            //Temporizador do jogador de Brancas (10min = 600s)
-  int temporizadorPretas = 600;             //Temporizador do jogador de Pretas (10min = 600s)
-  volatile boolean ledOnBrancas = false;    //Flag para habilitar ou desabilitar o LED do jogador de Brancas
-  volatile boolean ledOnPretas = false;     //Flag para habilitar ou desabilitar o LED do jogador de Pretas
-  volatile boolean printFlag = false;       //Flag para printar o temporizador de um dos jogadores no Monitor Serial
-  volatile boolean jogadorBrancas = false;  //Flag para printar que será a vez do jogador de Brancas no Monitor Serial
-  volatile boolean jogadorPretas = false;   //Flag para printar que será a vez do jogador de Pretas no Monitor Serial
+//Pins used for the buttons and LEDs
+  #define blackButtonPin 2
+  #define whiteButtonPin 3
+  #define whiteLedPin 10
+  #define blackLedPin 8
+
+ //Global variables
+  int count = 0;                             //timer overflow counter
+  int firstPrintWhite = 0;             //Flag to print the initial time of the white player, in our case "10:00", on the Serial Monitor
+  int firstPrintBlack = 0;              //Flag to print the initial time of the black player, in our case "10:00", on the Serial Monitor
+  int whiteTimer = 600;            //Timer for the white player (10 min = 600s)
+  int blackTimer = 600;             //Timer for the black player (10 min = 600s)
+  volatile boolean whiteLedOn = false;    //Flag to enable or disable the LED of the white player
+  volatile boolean blackLedOn = false;     //Flag to enable or disable the LED of the black player
+  volatile boolean printFlag = false;       //Flag to enable or disable the LED of the black player
+  volatile boolean whiteTurn = false;  //Flag to print that it is the turn of the white player on the Serial Monitor
+  volatile boolean blackTurn = false;   //Flag to print that it is the turn of the black player on the Serial Monitor
   
   void setup() {
     Serial.begin(9600);
-    cli();   // desabilita interrupcao global
+    cli();   //disables global interrupt
     
-    pinMode(pinoLedBrancas,OUTPUT);
-    pinMode(pinoLedPretas,OUTPUT);
-    pinMode(pinoBotaoBrancas,INPUT_PULLUP);
-    pinMode(pinoBotaoPretas,INPUT_PULLUP);
-    digitalWrite(pinoLedBrancas, LOW);
-    digitalWrite(pinoLedPretas, LOW);  
+    pinMode(whiteLedPin,OUTPUT);
+    pinMode(blackLedPin,OUTPUT);
+    pinMode(whiteButtonPin,INPUT_PULLUP);
+    pinMode(blackButtonPin,INPUT_PULLUP);
+    digitalWrite(whiteLedPin, LOW);
+    digitalWrite(blackLedPin, LOW);  
   
-    attachInterrupt(digitalPinToInterrupt(pinoBotaoBrancas),botaoBrancas, RISING);  //Interrupção externa para o Botao do jogador de Brancas
-    attachInterrupt(digitalPinToInterrupt(pinoBotaoPretas),botaoPretas, RISING);    //Interrupção externa para o Botao do jogador de Pretas
+    attachInterrupt(digitalPinToInterrupt(whiteButtonPin),whiteButton, RISING);    //External interrupt for the white player button
+    attachInterrupt(digitalPinToInterrupt(blackButtonPin),blackButton, RISING);    //External interrupt for the black player button
    
-    TCCR2A = 0;                                   // zera registrador TCCR2A
-    TCNT2 = 0x06;                                 // Inicia o Timer2 em 6
+    TCCR2A = 0;                                   //zero TCCR2A register
+    TCNT2 = 0x06;                                 //Start Timer2 at 6
     TCCR2B = ((TCCR2B & B11111000) | B00000110);  // prescaler 256
-    TIMSK2 |= 0x01;                               // Seta o Bit menos significativo
-    sei();                                        // habilita interrupcao global
+    TIMSK2 |= 0x01;                               //Set the least significant bit
+    sei();                                        //enable global interrupt
   }
   
   void loop() {
-    if(ledOnBrancas){                    //Se a Flag do LED do jogador de Brancas estiver como "true", liga o LED do jogador de Brancas e printa o seu temporizador
-      digitalWrite(pinoLedBrancas,HIGH);
-      if(jogadorBrancas){                //Printa no Monitor Serial que será a vez do jogador de Brancas
-        Serial.println("Vez do Jogador de Brancas");
-        jogadorBrancas = !jogadorBrancas;
+    if(whiteLedOn){                    //If the white player's LED flag is "true", turn on the white player's LED and print their timer
+      digitalWrite(whiteLedPin,HIGH);
+      if(whiteTurn){                //Prints on the Serial Monitor that it is the white player's turn
+        Serial.println("White Player's Turn");
+        whiteTurn = !whiteTurn;
       }
-      if(primeiroPrintBrancas == 0){     //Printa o tempo inicial do jogador de Brancas
-        imprime(temporizadorBrancas);
-        primeiroPrintBrancas = 1;
+      if(firstPrintWhite == 0){     //Print the initial time of the white player
+        printTime(whiteTimer);
+        firstPrintWhite = 1;
       }
-      if(printFlag){                     //printa o temporizador do jogador de Brancas no Monitor Serial                  
-        imprime(temporizadorBrancas);
+      if(printFlag){                     //print the white player's timer on the Serial Monitor                 
+        printTime(whiteTimer);
         printFlag = !printFlag;
       }
     }
     
-    if(!ledOnBrancas) digitalWrite(pinoLedBrancas,LOW); //Se a Flag do LED do jogador de Brancas estiver como "false", desliga o LED do jogador de Brancas
+    if(!whiteLedOn) digitalWrite(whiteLedPin,LOW); //If the white player's LED flag is "false", turn off the white player's LED
     
-    if(ledOnPretas){                    //Se a Flag do LED do jogador de Pretas estiver como "true", liga o LED do jogador de Pretas e printa o seu temporizador
-      digitalWrite(pinoLedPretas,HIGH);
-      if(jogadorPretas){                //Printa no Monitor Serial que será a vez do jogador de Pretas
-        Serial.println("Vez do Jogador de Pretas");
-        jogadorPretas = !jogadorPretas;
+    if(blackLedOn){                    //If the flag for the Black player's LED is set to "true", turn on the Black player's LED and print its timer.
+      digitalWrite(blackLedPin,HIGH);
+      if(blackTurn){                //Print on the Serial Monitor that it will be Black player's turn.
+        Serial.println("Black player's turn");
+        blackTurn = !blackTurn;
       }
-      if(primeiroPrintPretas == 0){     //Printa o tempo inicial do jogador de Pretas
-        imprime(temporizadorPretas);
-        primeiroPrintPretas = 1;
+      if(firstPrintBlack == 0){     //Print the initial time of the Black player
+        printTime(blackTimer);
+        firstPrintBlack = 1;
       }
-      if(printFlag){                    //printa o temporizador do jogador de Pretas no Monitor Serial
-        imprime(temporizadorPretas);
+      if(printFlag){                    //Print the timer of the Black player on the Serial Monitor.
+        printTime(blackTimer);
         printFlag = !printFlag; 
       }
     }
     
-    if(!ledOnPretas) digitalWrite(pinoLedPretas,LOW); //Se a Flag do LED do jogador de Pretas estiver como "false", desliga o LED do jogador de Pretas
+    if(!blackLedOn) digitalWrite(blackLedPin,LOW); //If the flag of the Black player's LED is "false", turn off the Black player's LED.
 
-    //Caso algum temporizador zere, os tempos de cada jogador será printado e será finalizado o jogo!
-    if((temporizadorBrancas == 0) or (temporizadorPretas == 0)){
-      Serial.println("O temporizador de um dos jogadores zerou!");
+    //If any timer runs out, the times of each player will be printed, and the game will be finished!
+    if((whiteTimer == 0) or (blackTimer == 0)){
+      Serial.println("The timer of one of the players has run out!");
       Serial.println("---------------------------------------------");
-      Serial.print("Temporizador do jogador de Brancas: ");
-      imprime(temporizadorBrancas);
-      Serial.print("Temporizador do jogador de Pretas: ");
-      imprime(temporizadorPretas);
+      Serial.print("Timer for White player: ");
+      printTime(whiteTimer);
+      Serial.print("Timer for Black player: ");
+      printTime(blackTimer);
       Serial.println("---------------------------------------------");
-      Serial.println("JOGO FINALIZADO!");
+      Serial.println("GAME OVER!");
       while(1);
     }
   }
   
-  void botaoBrancas()
+  void whiteButton()
   {
-    if(digitalRead(pinoLedPretas) != 1){ //Altera a Flag do LED do jogador de Pretas para "true" e a Flag do LED do jogador de Brancas para "false"
-                                         //Caso o pino da Led do jogador de Pretas não esteja em HIGH
-      ledOnPretas = !ledOnPretas;
-      ledOnBrancas = !ledOnPretas;
-      jogadorPretas = !jogadorPretas;
+    if(digitalRead(blackLedPin) != 1){ //Set the LED flag of the Black player to "true" and the LED flag of the White player to "false".
+                                       //If the pin of the black player's LED is not in HIGH
+      blackLedOn = !blackLedOn;
+      whiteLedOn = !blackLedOn;
+      blackTurn = !blackTurn;
     }
   }
   
-  void botaoPretas()
+  void blackButton()
   {
-    if(digitalRead(pinoLedBrancas) != 1){ //Altera a Flag do LED do jogador de Brancas para "true" e a Flag do LED do jogador de Pretas para "false"
-                                          //Caso o pino da Led do jogador de Brancas não esteja em HIGH
-      ledOnBrancas = !ledOnBrancas;
-      ledOnPretas = !ledOnBrancas;
-      jogadorBrancas = !jogadorBrancas;
+    if(digitalRead(whiteLedPin) != 1){ //Changes the Flag of the LED of the White player to "true" and the Flag of the LED of the Black player to "false".
+                                       //If the LED pin of the White player is not set to HIGH, set the LED Flag of the White player to "true".
+      whiteLedOn = !whiteLedOn;
+      blackLedOn = !whiteLedOn;
+      whiteTurn = !whiteTurn;
     }
   }
 
-  //Interrupção de Timer
-  //Estou utilizando o "Timer 2" tanto para o temporizador do jogador de Brancas quanto para o jogador de Pretas
+  //Timer Interrupt.
+  //I'm using "Timer 2" for both the timer of the White player and the Black player
   ISR(TIMER2_OVF_vect) {
-    if(digitalRead(pinoLedBrancas) == 1)  //verifica se o pino do Led do jogador de Brancas está em HIGH
-      cont++;                             //incrementa o contador do estouro do temporizador
-      TCNT2 = 0x06;                       //Inicia o Timer2 em 6
-      if (cont == 250) {                  //verifica se o contador do estourou do temporizador chegou em 250
-        temporizadorBrancas --;           //decrementa o temporizador do jogador de Brancas
-        cont = 0;                         //Zera o contador
-        printFlag = !printFlag;           //altera a Flag para "true" para printar o temporizador do jogador de Brancas no Monitor Serial
+    if(digitalRead(whiteLedPin) == 1)  //Check if the Led pin of the White player is in HIGH
+      count++;                             //increment the timer overflow counter
+      TCNT2 = 0x06;                       //Starts Timer2 at 6.
+      if (count == 250) {                  //verifies if the timer overflow counter has reached 250.
+        whiteTimer --;           //Decrement the timer of the White player.
+        count = 0;                         //Reset the counter.
+        printFlag = !printFlag;           //Change the Flag to "true" to print the timer of the White player on the Serial Monitor.
       }
   
-      if(digitalRead(pinoLedPretas) == 1) //verifica se o pino do Led do jogador de Pretas está em HIGH
-      cont++;                             //incrementa o contador do estouro do temporizador
-      TCNT2 = 0x06;                       //Inicia o Timer2 em 6
-      if (cont == 250) {                  //verifica se o contador do estourou do temporizador chegou em 250
-        temporizadorPretas--;             //decrementa o temporizador do jogador de Pretas
-        cont = 0;                         //Zera o contador
-        printFlag = !printFlag;           //altera a Flag para "true" para printar o temporizador do jogador de Pretas no Monitor Serial
+      if(digitalRead(blackLedPin) == 1) //Checks if the pin of the Black player's LED is in HIGH.
+      count++;                             //increment the timer overflow counter
+      TCNT2 = 0x06;                       //Starts Timer2 at 6.
+      if (count == 250) {                  //verifies if the timer overflow counter has reached 250.
+        blackTimer--;             //Decrement the timer of the Black player.
+        count = 0;                         //Reset the counter.
+        printFlag = !printFlag;           //Change the Flag to "true" to print the timer of the Black player on the Serial Monitor.
       }
   }
 
-  //Funcao para printar o temporizador dos jogadores
-  //Com ela, evita que a parte do loop() do programa fique cheio de "Serial.prints"
-  void imprime(int temp){
+  //Function to print the players' timers.
+  //With it, it avoids the loop() part of the program from being filled with "Serial.prints"
+  void printTime(int temp){
     if((temp / 60) < 10)Serial.print("0");
     Serial.print(temp / 60);
     Serial.print(":");
