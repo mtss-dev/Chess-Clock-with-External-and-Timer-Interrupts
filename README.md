@@ -29,3 +29,14 @@ The project can be simulated through the following link: [chess clock simulation
 | Button  | 2 |
 | Led | 2| 
 | 1 kΩ Resistor | 2 |
+
+## Example of the Running Application
+
+To start, the player (White or Black) must press the button. Upon pressing, the time of their opponent will begin to decrement until they move one of their pieces and press their button, passing the turn to the next player.
+
+The timer is set for 10 minutes. If one of the players runs out of time, the execution will be ended, showing the remaining time of each player. Whoever runs out of time loses the game!
+
+<p align="center">
+  <img width="300em" src="imgs/example.png"/> 
+  <img width="500em" src="imgs/example2.png"/> 
+</p>
